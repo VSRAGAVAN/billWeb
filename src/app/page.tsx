@@ -90,7 +90,7 @@ export default function LoginPage() {
         }))
       }
       
-    } catch (err) {
+    } catch {
       setErrors(prev => ({
         ...prev,
         general: 'Login failed. Please try again.'

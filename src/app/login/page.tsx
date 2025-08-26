@@ -37,7 +37,7 @@ export default function LoginPage() {
       // For demo purposes, we'll simulate success
       alert('Login successful! (This is a demo)')
       
-    } catch (err) {
+    } catch {
       setError('Login failed. Please check your credentials.')
     } finally {
       setIsLoading(false)

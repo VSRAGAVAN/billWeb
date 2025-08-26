@@ -44,8 +44,8 @@ export default function CreateBillPage() {
     }
   ])
 
-  const [gstRate, setGstRate] = useState(18) // 18% GST
-  const [igstRate, setIgstRate] = useState(0) // IGST for inter-state
+  const [gstRate] = useState(18) // 18% GST
+  const [igstRate] = useState(0) // IGST for inter-state
   const [isInterState, setIsInterState] = useState(false)
   const [billNumber, setBillNumber] = useState(`WB${Date.now().toString().slice(-6)}`)
   const [billDate, setBillDate] = useState(new Date().toISOString().split('T')[0])
@@ -96,7 +96,7 @@ export default function CreateBillPage() {
     }
   }
 
-  const updateBillItem = (id: string, field: keyof BillItem, value: any) => {
+  const updateBillItem = (id: string, field: keyof BillItem, value: string | number) => {
     setBillItems(billItems.map(item => {
       if (item.id === id) {
         const updatedItem = { ...item, [field]: value }
@@ -130,9 +130,8 @@ export default function CreateBillPage() {
   }
 
   const handlePrint = () => {
-    // Hide all elements except the bill content
-    const printContents = printRef.current?.innerHTML
-    const originalContents = document.body.innerHTML
+  // Hide all elements except the bill content
+  const printContents = printRef.current?.innerHTML
     
     if (printContents) {
       // Create a new window for printing
@@ -614,11 +613,6 @@ export default function CreateBillPage() {
                       checked={isInterState}
                       onChange={(e) => {
                         setIsInterState(e.target.checked)
-                        if (e.target.checked) {
-                          setIgstRate(gstRate)
-                        } else {
-                          setIgstRate(0)
-                        }
                       }}
                       className="mr-2"
                     />

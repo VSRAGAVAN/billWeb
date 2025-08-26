@@ -1,8 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
+import { useEffect, useState } from 'react'
 
 export default function WoodBillingDashboard() {
   const [user, setUser] = useState({ email: '', name: '' })
