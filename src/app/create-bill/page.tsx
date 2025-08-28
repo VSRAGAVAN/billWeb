@@ -1,76 +1,76 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useEffect, useRef, useState } from 'react'
+// import Link from 'next/link' // Removed unused import
 import {
+  AccountBalance as AccountBalanceIcon,
+  Add as AddIcon,
+  // ArrowBack as ArrowBackIcon, // Removed unused import
+  Business as BusinessIcon,
+  Delete as DeleteIcon,
+  Email as EmailIcon,
+  Facebook as FacebookIcon,
+  LinkedIn as LinkedInIcon,
+  LocationOn as LocationIcon,
+  PictureAsPdf as PdfIcon,
+  Person as PersonIcon,
+  Phone as PhoneIcon,
+  Print as PrintIcon,
+  Receipt as ReceiptIcon,
+  Save as SaveIcon,
+  Share as ShareIcon,
+  Telegram as TelegramIcon,
+  Twitter as TwitterIcon,
+  WhatsApp as WhatsAppIcon
+} from '@mui/icons-material'
+import {
+  Alert,
+  AppBar,
+  Avatar,
   Box,
-  Paper,
-  Typography,
-  TextField,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
   Button,
+  // Grid, // Removed unused import
+  Card,
+  CardContent,
+  Chip,
+  Container,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Divider,
+  FormControl,
+  FormControlLabel,
   IconButton,
+  InputAdornment,
+  InputLabel,
+  List,
+  ListItem,
+  ListItemAvatar,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  MenuItem,
+  Paper,
+  Select,
+  Snackbar,
+  SpeedDial,
+  SpeedDialAction,
+  SpeedDialIcon,
+  Switch,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Grid,
-  Card,
-  CardContent,
-  Divider,
-  Chip,
-  Avatar,
-  ListItemText,
-  ListItemAvatar,
-  Switch,
-  FormControlLabel,
-  AppBar,
+  TextField,
   Toolbar,
-  Container,
   Tooltip,
-  Alert,
-  Snackbar,
-  InputAdornment,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemButton,
-  SpeedDial,
-  SpeedDialIcon,
-  SpeedDialAction
+  Typography
 } from '@mui/material'
-import {
-  Add as AddIcon,
-  Delete as DeleteIcon,
-  Print as PrintIcon,
-  Save as SaveIcon,
-  PictureAsPdf as PdfIcon,
-  ArrowBack as ArrowBackIcon,
-  Business as BusinessIcon,
-  Person as PersonIcon,
-  Receipt as ReceiptIcon,
-  Phone as PhoneIcon,
-  LocationOn as LocationIcon,
-  AccountBalance as AccountBalanceIcon,
-  Share as ShareIcon,
-  WhatsApp as WhatsAppIcon,
-  Telegram as TelegramIcon,
-  Email as EmailIcon,
-  Facebook as FacebookIcon,
-  Twitter as TwitterIcon,
-  LinkedIn as LinkedInIcon
-} from '@mui/icons-material'
 import { ThemeProvider, createTheme } from '@mui/material/styles'
+import { useRouter } from 'next/navigation'
 import CommonHeader from '../../components/CommonHeader'
 import CommonSidebar from '../../components/CommonSidebar'
 import Footer from '../../components/Footer'
@@ -433,7 +433,7 @@ export default function CreateBillPage() {
 
   // Native sharing if available
   const handleNativeShare = async () => {
-    if (navigator.share && generatedPdfBlob) {
+    if (typeof window !== 'undefined' && navigator.share && generatedPdfBlob) {
       try {
         const file = new File([generatedPdfBlob], `WoodBill-${billNumber}.pdf`, { type: 'application/pdf' })
         await navigator.share({
@@ -863,7 +863,7 @@ export default function CreateBillPage() {
             </Typography>
             
             <List>
-              {typeof navigator.share === 'function' && (
+              {typeof window !== 'undefined' && typeof navigator.share === 'function' && (
                 <ListItem disablePadding>
                   <ListItemButton onClick={handleNativeShare}>
                     <ListItemIcon>

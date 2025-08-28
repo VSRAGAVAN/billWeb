@@ -1,12 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import {
   Box,
   Button,
   Card,
   CardContent,
-  Chip,
   Container,
   Stack,
   Table,
@@ -19,6 +17,7 @@ import {
   Typography,
   createTheme
 } from '@mui/material'
+import { useEffect, useState } from 'react'
 import {
   Cell,
   Pie,
@@ -99,11 +98,11 @@ interface BillData {
 export default function WoodBillingDashboard() {
   const [user, setUser] = useState({ email: '', name: '', displayName: '' })
   const [drawerOpen, setDrawerOpen] = useState(false)
-  const [bills, setBills] = useState<BillData[]>([])
+  // Removed unused variable: bills
   const [todayTotal, setTodayTotal] = useState(0)
   const [weekTotal, setWeekTotal] = useState(0)
   const [monthTotal, setMonthTotal] = useState(0)
-  const [productSalesData, setProductSalesData] = useState<any[]>([])
+  const [productSalesData, setProductSalesData] = useState<{ product: string; amount: number; sales: number }[]>([])
   const [recentBills, setRecentBills] = useState<BillData[]>([])
 
   const colors = ['#d97706', '#059669', '#dc2626', '#7c3aed', '#2563eb', '#ea580c']
@@ -121,7 +120,7 @@ export default function WoodBillingDashboard() {
 
   const loadBillsData = () => {
     const billsData = JSON.parse(localStorage.getItem('woodBills') || '[]')
-    setBills(billsData)
+  // setBills(billsData) // Removed unused state
     setRecentBills(billsData.slice(-5).reverse()) // Last 5 bills
 
     // Calculate totals for today, week, month
@@ -206,7 +205,7 @@ export default function WoodBillingDashboard() {
               Welcome, {user.name || user.displayName || 'User'}!
             </Typography>
             <Typography variant="body1" sx={{ color: 'text.secondary' }}>
-              Here's what's happening with your wood business today.
+              Here&apos;s what&apos;s happening with your wood business today.
             </Typography>
           </Box>
 
@@ -215,7 +214,7 @@ export default function WoodBillingDashboard() {
             <Card sx={{ bgcolor: 'background.paper', borderRadius: 2, flex: 1 }}>
               <CardContent>
                 <Typography variant="h6" sx={{ color: 'primary.main', mb: 1 }}>
-                  Today's Sales
+                  Today&apos;s Sales
                 </Typography>
                 <Typography variant="h4" fontWeight={700} sx={{ color: 'white' }}>
                   {formatCurrency(todayTotal)}

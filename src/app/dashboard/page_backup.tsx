@@ -38,7 +38,7 @@ import {
   Container,
   Divider,
   Drawer,
-  Grid,
+  // Grid, (removed unused import)
   IconButton,
   InputBase,
   List,
@@ -205,11 +205,11 @@ export default function WoodBillingDashboard() {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [bills, setBills] = useState<BillData[]>([])
   const [todayTotal, setTodayTotal] = useState(0)
-  const [weekTotal, setWeekTotal] = useState(0)
+  // Removed unused weekTotal
   const [monthTotal, setMonthTotal] = useState(0)
-  const [productSalesData, setProductSalesData] = useState<any[]>([])
+  const [productSalesData, setProductSalesData] = useState<{ product: string; amount: number; sales: number }[]>([])
   const [recentBills, setRecentBills] = useState<BillData[]>([])
-  const [salesTrendData, setSalesTrendData] = useState<any[]>([])
+  const [salesTrendData, setSalesTrendData] = useState<{ date: string; amount: number }[]>([])
 
   const colors = ['#d97706', '#059669', '#dc2626', '#7c3aed', '#2563eb', '#ea580c']
 
@@ -273,7 +273,6 @@ export default function WoodBillingDashboard() {
     })
 
     setTodayTotal(todaySum)
-    setWeekTotal(weekSum)
     setMonthTotal(monthSum)
 
     // Convert product sales to chart data
@@ -328,15 +327,10 @@ export default function WoodBillingDashboard() {
     }).format(amount)
   }
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-IN', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    })
-  }
+  // Removed unused formatDate
 
   return (
+    <>
     <ThemeProvider theme={theme}>
       <Box sx={{ bgcolor: 'background.default', minHeight: '100vh' }}>
         {/* Common Header */}
@@ -344,6 +338,7 @@ export default function WoodBillingDashboard() {
 
         {/* Common Sidebar */}
         <CommonSidebar open={drawerOpen} onClose={handleDrawerClose} />
+        <AppBar position="static" elevation={0} sx={{ bgcolor: 'background.paper', borderBottom: 1, borderColor: 'divider' }}>
           <Toolbar>
             {/* Menu Icon */}
             <IconButton
@@ -422,7 +417,6 @@ export default function WoodBillingDashboard() {
               >
                 This Year
               </Button>
-              
               <IconButton size="large" aria-label="show 4 new mails" color="inherit">
                 <Badge badgeContent={4} color="error">
                   <MailIcon />
@@ -437,11 +431,9 @@ export default function WoodBillingDashboard() {
                   <NotificationsIcon />
                 </Badge>
               </IconButton>
-
               <Typography variant="body2" color="text.secondary" sx={{ mx: 2 }}>
                 Welcome, {user.name || user.displayName || 'User'}
               </Typography>
-              
               <IconButton
                 size="large"
                 edge="end"
@@ -1444,5 +1436,6 @@ export default function WoodBillingDashboard() {
         </Container>
       </Box>
     </ThemeProvider>
+    </>
   )
 }

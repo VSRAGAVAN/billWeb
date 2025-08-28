@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect } from 'react'
+import { Box, CircularProgress, ThemeProvider, Typography, createTheme } from '@mui/material'
 import { useRouter } from 'next/navigation'
-import { Box, CircularProgress, Typography, ThemeProvider, createTheme } from '@mui/material'
+import { useEffect } from 'react'
 
 const theme = createTheme({
   palette: {

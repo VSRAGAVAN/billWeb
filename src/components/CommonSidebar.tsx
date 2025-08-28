@@ -3,20 +3,18 @@
 import {
   AccountCircle as AccountCircleIcon,
   Add as AddIcon,
-  Assignment as AssignmentIcon,
+  // Assignment as AssignmentIcon, // Removed unused import
   Assessment as AssessmentIcon,
   ChevronLeft as ChevronLeftIcon,
   Dashboard as DashboardIcon,
   Inventory as InventoryIcon,
   Logout as LogoutIcon,
   People as PeopleIcon,
-  Receipt as ReceiptIcon,
   Settings as SettingsIcon,
-  ViewList as ViewListIcon
+  ViewList as ViewListIcon,
 } from '@mui/icons-material'
 import {
   Box,
-  Divider,
   Drawer,
   List,
   ListItem,
@@ -26,6 +24,7 @@ import {
   Typography
 } from '@mui/material'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 
 const drawerWidth = 280
@@ -129,14 +128,13 @@ export default function CommonSidebar({ open, onClose }: CommonSidebarProps) {
           alignItems: 'center',
           justifyContent: 'center'
         }}>
-          <img 
-            src="/favicon.ico" 
-            alt="Ganapathy Logo" 
-            style={{ 
-              width: 28, 
-              height: 28, 
-              borderRadius: 4 
-            }} 
+          <Image
+            src="/favicon.ico"
+            alt="Ganapathy Logo"
+            width={28}
+            height={28}
+            style={{ borderRadius: 4 }}
+            priority
           />
         </Box>
         <Typography variant="h6" fontWeight={600} sx={{ color: 'white', fontSize: '1.1rem' }}>

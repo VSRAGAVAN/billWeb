@@ -1,10 +1,10 @@
 'use client'
 
-import { useState } from 'react'
-import Image from 'next/image'
-import Link from 'next/link'
-import { ThemeProvider, createTheme } from '@mui/material/styles'
 import { CssBaseline } from '@mui/material'
+import { ThemeProvider, createTheme } from '@mui/material/styles'
+import Link from 'next/link'
+import Image from 'next/image'
+import { useState } from 'react'
 import Footer from '../../components/Footer'
 
 // Dark theme for consistency
@@ -79,14 +79,13 @@ export default function LoginPage() {
             {/* Logo */}
             <div className="absolute top-8 left-8">
               <div className="flex items-center gap-2">
-                <img 
-                  src="/favicon.ico" 
-                  alt="Ganapathy Logo" 
-                  style={{ 
-                    width: 32, 
-                    height: 32, 
-                    borderRadius: 4 
-                  }} 
+                <Image
+                  src="/favicon.ico"
+                  alt="Ganapathy Logo"
+                  width={32}
+                  height={32}
+                  style={{ borderRadius: 4 }}
+                  priority
                 />
                 <span className="text-2xl font-bold text-cyan-400">Ganapathy</span>
                 <span className="text-2xl font-bold text-red-500">Timbers</span>

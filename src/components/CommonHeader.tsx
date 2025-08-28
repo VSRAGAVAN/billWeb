@@ -7,7 +7,6 @@ import {
   Menu as MenuIcon,
   MoreVert as MoreIcon,
   Notifications as NotificationsIcon,
-  Receipt as ReceiptIcon,
   Search as SearchIcon
 } from '@mui/icons-material'
 import {
@@ -26,7 +25,8 @@ import {
   styled
 } from '@mui/material'
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import Image from 'next/image'
 
 // Styled components for search functionality
 const Search = styled('div')(({ theme }) => ({
@@ -135,15 +135,13 @@ export default function CommonHeader({ onDrawerOpen }: CommonHeaderProps) {
 
           {/* Logo and Title */}
           <Box sx={{ display: 'flex', alignItems: 'center', mr: 3 }}>
-            <img 
-              src="/favicon.ico" 
-              alt="Ganapathy Logo" 
-              style={{ 
-                width: 32, 
-                height: 32, 
-                marginRight: 8,
-                borderRadius: 4 
-              }} 
+            <Image
+              src="/favicon.ico"
+              alt="Ganapathy Logo"
+              width={32}
+              height={32}
+              style={{ marginRight: 8, borderRadius: 4 }}
+              priority
             />
             <Typography 
               variant="h6" 

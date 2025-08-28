@@ -1,70 +1,67 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import {
+  AccountCircle as AccountCircleIcon,
+  Add as AddIcon,
+  Assessment as AssessmentIcon,
+  Assignment as AssignmentIcon,
+  Category as CategoryIcon,
+  ChevronLeft as ChevronLeftIcon,
+  Dashboard as DashboardIcon,
+  Delete as DeleteIcon,
+  Edit as EditIcon,
+  Inventory as InventoryIcon,
+  Logout as LogoutIcon,
+  Mail as MailIcon,
+  Menu as MenuIcon,
+  // MoreVert as MoreIcon, (removed unused import)
+  Notifications as NotificationsIcon,
+  People as PeopleIcon,
+  Receipt as ReceiptIcon,
+  Search as SearchIcon,
+  Settings as SettingsIcon,
+  TrendingUp as TrendingUpIcon,
+  Warning as WarningIcon
+} from '@mui/icons-material'
+import {
+  AppBar,
+  Avatar,
+  Badge,
   Box,
-  Typography,
+  Button,
   Card,
   CardContent,
+  Chip,
+  Container,
+  createTheme,
+  Divider,
+  Drawer,
+  FormControl,
+  IconButton,
+  InputAdornment,
+  InputLabel,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Menu,
+  MenuItem,
+  Select,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
-  Button,
-  IconButton,
-  Chip,
-  Avatar,
   TextField,
-  InputAdornment,
-  AppBar,
-  Toolbar,
-  Container,
   ThemeProvider,
-  createTheme,
-  Drawer,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-  Divider,
-  Badge,
-  Menu,
-  MenuItem,
-  Select,
-  FormControl,
-  InputLabel,
+  Toolbar,
+  Typography
 } from '@mui/material'
-import {
-  Search as SearchIcon,
-  Add as AddIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  FilterList as FilterIcon,
-  Menu as MenuIcon,
-  Receipt as ReceiptIcon,
-  Dashboard as DashboardIcon,
-  Assignment as AssignmentIcon,
-  Inventory as InventoryIcon,
-  Assessment as AssessmentIcon,
-  Settings as SettingsIcon,
-  Logout as LogoutIcon,
-  ChevronLeft as ChevronLeftIcon,
-  AccountCircle as AccountCircleIcon,
-  Mail as MailIcon,
-  Notifications as NotificationsIcon,
-  MoreVert as MoreIcon,
-  People as PeopleIcon,
-  Category as CategoryIcon,
-  TrendingUp as TrendingUpIcon,
-  TrendingDown as TrendingDownIcon,
-  Warning as WarningIcon,
-} from '@mui/icons-material'
-import { styled, alpha } from '@mui/material/styles'
+import { alpha, styled } from '@mui/material/styles'
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
 
 const theme = createTheme({
   palette: {
@@ -216,7 +213,7 @@ export default function InventoryPage() {
   const [categoryFilter, setCategoryFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
-  const [mobileMoreAnchorEl, setMobileMoreAnchorEl] = useState<null | HTMLElement>(null)
+  // const [mobileMoreAnchorEl, setMobileMoreAnchorEl] = useState<null | HTMLElement>(null)
   const [user, setUser] = useState({ email: '', name: '', displayName: '' })
 
   // Load user data on component mount
@@ -233,8 +230,8 @@ export default function InventoryPage() {
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => setAnchorEl(event.currentTarget)
   const handleMenuClose = () => setAnchorEl(null)
 
-  const handleMobileMenuOpen = (event: React.MouseEvent<HTMLElement>) => setMobileMoreAnchorEl(event.currentTarget)
-  const handleMobileMenuClose = () => setMobileMoreAnchorEl(null)
+  // const handleMobileMenuOpen = (event: React.MouseEvent<HTMLElement>) => setMobileMoreAnchorEl(event.currentTarget)
+  // Removed unused variable: handleMobileMenuClose
 
   const handleLogout = () => {
     localStorage.removeItem('isLoggedIn')
@@ -260,7 +257,7 @@ export default function InventoryPage() {
   const totalValue = inventoryItems.reduce((sum, item) => sum + (item.quantity * item.price), 0)
 
   const isMenuOpen = Boolean(anchorEl)
-  const isMobileMenuOpen = Boolean(mobileMoreAnchorEl)
+  // Removed unused variable: isMobileMenuOpen
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -359,14 +356,7 @@ export default function InventoryPage() {
             </Box>
 
             <Box sx={{ display: { xs: 'flex', md: 'none' } }}>
-              <IconButton
-                size="large"
-                aria-label="show more"
-                onClick={handleMobileMenuOpen}
-                color="inherit"
-              >
-                <MoreIcon />
-              </IconButton>
+              {/* Mobile menu button removed (was unused and caused JSX errors) */}
             </Box>
           </Toolbar>
         </AppBar>

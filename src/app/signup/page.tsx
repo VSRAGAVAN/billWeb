@@ -7,14 +7,13 @@ export default function SignupPage() {
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <div className="flex justify-center items-center gap-2 mb-4">
-            <img 
-              src="/favicon.ico" 
-              alt="Ganapathy Logo" 
-              style={{ 
-                width: 40, 
-                height: 40, 
-                borderRadius: 4 
-              }} 
+            <Image
+              src="/favicon.ico"
+              alt="Ganapathy Logo"
+              width={40}
+              height={40}
+              style={{ borderRadius: 4 }}
+              priority
             />
             <span className="text-2xl font-bold text-gray-900 dark:text-white">Ganapathy Timbers</span>
           </div>
