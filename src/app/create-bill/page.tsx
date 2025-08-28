@@ -1,8 +1,133 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import {
+  Box,
+  Paper,
+  Typography,
+  TextField,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Button,
+  IconButton,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Grid,
+  Card,
+  CardContent,
+  Divider,
+  Chip,
+  Avatar,
+  ListItemText,
+  ListItemAvatar,
+  Switch,
+  FormControlLabel,
+  AppBar,
+  Toolbar,
+  Container,
+  Tooltip,
+  Alert,
+  Snackbar,
+  InputAdornment,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemButton,
+  SpeedDial,
+  SpeedDialIcon,
+  SpeedDialAction
+} from '@mui/material'
+import {
+  Add as AddIcon,
+  Delete as DeleteIcon,
+  Print as PrintIcon,
+  Save as SaveIcon,
+  PictureAsPdf as PdfIcon,
+  ArrowBack as ArrowBackIcon,
+  Business as BusinessIcon,
+  Person as PersonIcon,
+  Receipt as ReceiptIcon,
+  Phone as PhoneIcon,
+  LocationOn as LocationIcon,
+  AccountBalance as AccountBalanceIcon,
+  Share as ShareIcon,
+  WhatsApp as WhatsAppIcon,
+  Telegram as TelegramIcon,
+  Email as EmailIcon,
+  Facebook as FacebookIcon,
+  Twitter as TwitterIcon,
+  LinkedIn as LinkedInIcon
+} from '@mui/icons-material'
+import { ThemeProvider, createTheme } from '@mui/material/styles'
+import CommonHeader from '../../components/CommonHeader'
+import CommonSidebar from '../../components/CommonSidebar'
+import Footer from '../../components/Footer'
+
+// Material UI Theme with dark CRM design
+const theme = createTheme({
+  palette: {
+    mode: 'dark',
+    primary: {
+      main: '#f59e0b', // Amber/Orange
+      dark: '#d97706',
+      light: '#fbbf24'
+    },
+    secondary: {
+      main: '#10b981', // Emerald green
+      dark: '#059669',
+      light: '#34d399'
+    },
+    background: {
+      default: '#0f172a', // Very dark blue-gray
+      paper: '#1e293b'     // Dark blue-gray for cards
+    },
+    text: {
+      primary: '#f8fafc',
+      secondary: '#cbd5e1'
+    }
+  },
+  typography: {
+    fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
+    h4: {
+      fontWeight: 700,
+    },
+    h6: {
+      fontWeight: 600,
+    },
+  },
+  shape: {
+    borderRadius: 12,
+  },
+  components: {
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+        },
+      },
+    },
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          textTransform: 'none',
+          fontWeight: 600,
+        },
+      },
+    },
+  },
+})
 
 interface BillItem {
   id: string
@@ -21,9 +146,66 @@ interface CustomerInfo {
   phone: string
 }
 
+// Product dropdown with Material UI
+interface ProductSelectProps {
+  value: string
+  onChange: (value: string) => void
+  products: Array<{ name: string; image: string }>
+}
+
+function ProductSelect({ value, onChange, products }: ProductSelectProps) {
+  return (
+    <FormControl fullWidth size="small">
+      <InputLabel>Product</InputLabel>
+      <Select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        label="Product"
+        renderValue={(selected) => {
+          const product = products.find(p => p.name === selected)
+          return product ? (
+            <Box display="flex" alignItems="center" gap={1}>
+              <Avatar
+                src={product.image}
+                alt={product.name}
+                sx={{ width: 24, height: 24 }}
+              />
+              <Typography variant="body2">{product.name}</Typography>
+            </Box>
+          ) : 'Select Product'
+        }}
+      >
+        {products.map((product) => (
+          <MenuItem key={product.name} value={product.name}>
+            <ListItemAvatar>
+              <Avatar
+                src={product.image}
+                alt={product.name}
+                sx={{ width: 32, height: 32 }}
+              />
+            </ListItemAvatar>
+            <ListItemText primary={product.name} />
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
+  )
+}
+
 export default function CreateBillPage() {
   const router = useRouter()
   const printRef = useRef<HTMLDivElement>(null)
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [snackbar, setSnackbar] = useState({ 
+    open: false, 
+    message: '', 
+    severity: 'success' as 'success' | 'error' 
+  })
+  const [shareDialog, setShareDialog] = useState(false)
+  const [generatedPdfBlob, setGeneratedPdfBlob] = useState<Blob | null>(null)
+
+  const handleDrawerOpen = () => setDrawerOpen(true)
+  const handleDrawerClose = () => setDrawerOpen(false)
   
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
     name: '',
@@ -44,38 +226,38 @@ export default function CreateBillPage() {
     }
   ])
 
-  const [gstRate] = useState(18) // 18% GST
-  const [igstRate] = useState(0) // IGST for inter-state
-  const [isInterState, setIsInterState] = useState(false)
-  const [billNumber, setBillNumber] = useState(`WB${Date.now().toString().slice(-6)}`)
+  const [gstRate] = useState(18)
+  const [igstRate] = useState(0)
+  const [isInterState, setIsInterState] = useState(true)
+  const [billNumber, setBillNumber] = useState('')
+  
+  useEffect(() => {
+    const lastBillNumber = localStorage.getItem('lastBillNumber')
+    let nextNumber = 1
+    if (lastBillNumber && /^#GWC\d{3}$/.test(lastBillNumber)) {
+      nextNumber = parseInt(lastBillNumber.replace('#GWC', ''), 10) + 1
+    }
+    const formatted = `#GWC${nextNumber.toString().padStart(3, '0')}`
+    setBillNumber(formatted)
+  }, [])
+  
   const [billDate, setBillDate] = useState(new Date().toISOString().split('T')[0])
 
-  // Wood product options
   const woodProducts = [
-    'Teak Wood',
-    'Pine Wood',
-    'Rosewood',
-    'Mahogany Wood',
-    'Bamboo',
-    'Oak Wood',
-    'Cedar Wood',
-    'Plywood',
-    'MDF Board',
-    'Particle Board'
+    { name: 'Teak Wood', image: '/TeakWood.jpg' },
+    { name: 'Pine Wood', image: '/PineWood.jpg' },
+    { name: 'Rosewood', image: '/Rosewood.jpg' },
+    { name: 'Plywood', image: '/Plywood.jpeg' },
+    { name: 'MDF Board', image: '/MDFBoard.jpeg' },
+    { name: 'Particle Board', image: '/ParticleBoard.png' }
   ]
 
   const specifications = [
-    '8mm Thickness',
-    '12mm Thickness',
-    '18mm Thickness',
-    '25mm Thickness',
-    'Planks',
-    'Blocks',
-    'Sheets',
-    'Logs',
-    'Premium Quality',
-    'Standard Quality'
+    'Window', 'Door', 'Cot', 'Sofa', 'Front Entrance',
+    'Dining Table', 'Table', 'Logs', 'Premium Quality', 'Standard Quality'
   ]
+
+  const units = ['CFT', 'Pcs', 'feet', 'Sq.Ft']
 
   const addBillItem = () => {
     const newItem: BillItem = {
@@ -129,343 +311,6 @@ export default function CreateBillPage() {
     return subtotal + gst.cgst + gst.sgst + gst.igst
   }
 
-  const handlePrint = () => {
-  // Hide all elements except the bill content
-  const printContents = printRef.current?.innerHTML
-    
-    if (printContents) {
-      // Create a new window for printing
-      const printWindow = window.open('', '_blank')
-      if (printWindow) {
-        printWindow.document.write(`
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <title>Bill ${billNumber}</title>
-              <style>
-                body { 
-                  font-family: Arial, sans-serif; 
-                  margin: 0; 
-                  padding: 20px; 
-                  font-size: 12px;
-                  line-height: 1.4;
-                }
-                .bill-container { 
-                  max-width: 800px; 
-                  margin: 0 auto; 
-                  background: white;
-                }
-                .company-header { 
-                  text-align: center; 
-                  margin-bottom: 30px; 
-                  border-bottom: 2px solid #ccc; 
-                  padding-bottom: 15px; 
-                }
-                .company-name { 
-                  font-size: 24px; 
-                  font-weight: bold; 
-                  color: #d97706; 
-                  margin-bottom: 5px; 
-                }
-                .company-tagline { 
-                  color: #666; 
-                  margin-bottom: 5px; 
-                }
-                .company-details { 
-                  font-size: 10px; 
-                  color: #888; 
-                }
-                .bill-header { 
-                  display: flex; 
-                  justify-content: space-between; 
-                  margin-bottom: 20px; 
-                }
-                .bill-to, .bill-info { 
-                  width: 48%; 
-                }
-                .bill-to h3, .bill-info h3 { 
-                  font-size: 14px; 
-                  margin-bottom: 10px; 
-                  color: #333; 
-                }
-                .customer-info, .bill-details { 
-                  font-size: 11px; 
-                  line-height: 1.5; 
-                }
-                .items-table { 
-                  width: 100%; 
-                  border-collapse: collapse; 
-                  margin: 20px 0; 
-                  font-size: 11px; 
-                }
-                .items-table th, .items-table td { 
-                  border: 1px solid #ddd; 
-                  padding: 8px; 
-                  text-align: left; 
-                }
-                .items-table th { 
-                  background-color: #f5f5f5; 
-                  font-weight: bold; 
-                }
-                .items-table td.amount { 
-                  text-align: right; 
-                }
-                .bill-summary { 
-                  display: flex; 
-                  justify-content: flex-end; 
-                  margin: 20px 0; 
-                }
-                .summary-table { 
-                  width: 300px; 
-                  font-size: 11px; 
-                }
-                .summary-table td { 
-                  padding: 5px 10px; 
-                  border-bottom: 1px solid #eee; 
-                }
-                .summary-table .total-row { 
-                  font-weight: bold; 
-                  font-size: 13px; 
-                  border-top: 2px solid #333; 
-                }
-                .terms { 
-                  margin-top: 30px; 
-                  font-size: 10px; 
-                  color: #666; 
-                }
-                .signatures { 
-                  display: flex; 
-                  justify-content: space-between; 
-                  margin-top: 40px; 
-                }
-                .signature-box { 
-                  text-align: center; 
-                  width: 200px; 
-                }
-                .signature-line { 
-                  border-bottom: 1px solid #000; 
-                  margin-top: 30px; 
-                  margin-bottom: 5px; 
-                }
-                @media print {
-                  body { margin: 0; padding: 10px; }
-                  .bill-container { max-width: none; }
-                }
-              </style>
-            </head>
-            <body>
-              <div class="bill-container">
-                <div class="company-header">
-                  <div class="company-name">WoodBill Pro</div>
-                  <div class="company-tagline">Premium Wood & Timber Solutions</div>
-                  <div class="company-details">
-                    Address: 123 Timber Street, Wood City | Phone: +91 98765 43210 | GSTIN: 29ABCDE1234F1Z5
-                  </div>
-                </div>
-                
-                <div class="bill-header">
-                  <div class="bill-to">
-                    <h3>Bill To:</h3>
-                    <div class="customer-info">
-                      <div><strong>${customerInfo.name}</strong></div>
-                      <div>${customerInfo.address}</div>
-                      <div>GSTIN: ${customerInfo.gstin}</div>
-                      <div>Phone: ${customerInfo.phone}</div>
-                    </div>
-                  </div>
-                  <div class="bill-info">
-                    <div class="bill-details">
-                      <div><strong>Bill No:</strong> ${billNumber}</div>
-                      <div><strong>Date:</strong> ${new Date(billDate).toLocaleDateString()}</div>
-                      <div><strong>Inter-State:</strong> ${isInterState ? 'Yes' : 'No'}</div>
-                    </div>
-                  </div>
-                </div>
-                
-                <table class="items-table">
-                  <thead>
-                    <tr>
-                      <th>Sr.</th>
-                      <th>Product</th>
-                      <th>Specification</th>
-                      <th>Qty</th>
-                      <th>Unit</th>
-                      <th>Rate</th>
-                      <th>Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${billItems.map((item, index) => `
-                      <tr>
-                        <td>${index + 1}</td>
-                        <td>${item.product}</td>
-                        <td>${item.specification}</td>
-                        <td>${item.quantity}</td>
-                        <td>${item.unit}</td>
-                        <td>₹${item.rate.toFixed(2)}</td>
-                        <td class="amount">₹${item.amount.toFixed(2)}</td>
-                      </tr>
-                    `).join('')}
-                  </tbody>
-                </table>
-                
-                <div class="bill-summary">
-                  <table class="summary-table">
-                    <tr>
-                      <td>Subtotal:</td>
-                      <td class="amount">₹${calculateSubtotal().toFixed(2)}</td>
-                    </tr>
-                    ${!isInterState ? `
-                      <tr>
-                        <td>CGST (${gstRate/2}%):</td>
-                        <td class="amount">₹${gstCalculation.cgst.toFixed(2)}</td>
-                      </tr>
-                      <tr>
-                        <td>SGST (${gstRate/2}%):</td>
-                        <td class="amount">₹${gstCalculation.sgst.toFixed(2)}</td>
-                      </tr>
-                    ` : `
-                      <tr>
-                        <td>IGST (${igstRate}%):</td>
-                        <td class="amount">₹${gstCalculation.igst.toFixed(2)}</td>
-                      </tr>
-                    `}
-                    <tr class="total-row">
-                      <td>Total Amount:</td>
-                      <td class="amount">₹${calculateTotal().toFixed(2)}</td>
-                    </tr>
-                  </table>
-                </div>
-                
-                <div class="terms">
-                  <h4>Terms & Conditions:</h4>
-                  <div>1. All wood materials are subject to natural variations in color and grain.</div>
-                  <div>2. Payment due within 30 days of invoice date.</div>
-                  <div>3. Goods once sold cannot be returned unless defective.</div>
-                  <div>4. Delivery charges are extra and will be charged as per actual.</div>
-                </div>
-                
-                <div class="signatures">
-                  <div class="signature-box">
-                    <div>Customer Signature</div>
-                    <div class="signature-line"></div>
-                  </div>
-                  <div class="signature-box">
-                    <div>Authorized Signature</div>
-                    <div class="signature-line"></div>
-                    <div style="font-size: 9px; margin-top: 5px;">For WoodBill Pro</div>
-                  </div>
-                </div>
-              </div>
-            </body>
-          </html>
-        `)
-        printWindow.document.close()
-        printWindow.focus()
-        
-        // Wait for content to load then print
-        setTimeout(() => {
-          printWindow.print()
-          printWindow.close()
-        }, 250)
-      }
-    }
-  }
-
-  const generatePDF = async () => {
-    try {
-      // Dynamic import to avoid SSR issues
-      const jsPDF = (await import('jspdf')).default
-      const html2canvas = (await import('html2canvas')).default
-      
-      if (printRef.current) {
-        // Create a clone of the element to avoid modifying the original
-        const element = printRef.current.cloneNode(true) as HTMLElement
-        
-        // Style the clone for better PDF rendering
-        element.style.background = 'white'
-        element.style.padding = '20px'
-        element.style.fontSize = '12px'
-        element.style.lineHeight = '1.4'
-        
-        // Remove interactive elements
-        const interactiveElements = element.querySelectorAll('input, select, button, .print\\:hidden')
-        interactiveElements.forEach(el => {
-          if (el.classList.contains('print:hidden')) {
-            el.remove()
-          } else {
-            // Replace inputs with their values
-            const input = el as HTMLInputElement
-            if (input.type === 'checkbox') {
-              const span = document.createElement('span')
-              span.textContent = input.checked ? 'Yes' : 'No'
-              input.parentNode?.replaceChild(span, input)
-            } else {
-              const span = document.createElement('span')
-              span.textContent = input.value || input.textContent || ''
-              span.style.display = 'inline-block'
-              span.style.minWidth = '100px'
-              input.parentNode?.replaceChild(span, input)
-            }
-          }
-        })
-        
-        // Temporarily add to DOM for rendering
-        element.style.position = 'absolute'
-        element.style.left = '-9999px'
-        element.style.top = '0'
-        document.body.appendChild(element)
-        
-        // Generate canvas
-        const canvas = await html2canvas(element, {
-          scale: 2,
-          useCORS: true,
-          allowTaint: true,
-          backgroundColor: '#ffffff'
-        })
-        
-        // Remove temporary element
-        document.body.removeChild(element)
-        
-        // Create PDF
-        const imgData = canvas.toDataURL('image/png')
-        const pdf = new jsPDF({
-          orientation: 'portrait',
-          unit: 'mm',
-          format: 'a4'
-        })
-        
-        const imgWidth = 210 // A4 width in mm
-        const pageHeight = 295 // A4 height in mm
-        const imgHeight = (canvas.height * imgWidth) / canvas.width
-        let heightLeft = imgHeight
-        
-        let position = 0
-        
-        // Add first page
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
-        heightLeft -= pageHeight
-        
-        // Add additional pages if needed
-        while (heightLeft >= 0) {
-          position = heightLeft - imgHeight
-          pdf.addPage()
-          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
-          heightLeft -= pageHeight
-        }
-        
-        // Save the PDF
-        pdf.save(`WoodBill-${billNumber}.pdf`)
-        
-        // Show success message
-        alert('PDF generated successfully!')
-      }
-    } catch (error) {
-      console.error('Error generating PDF:', error)
-      alert('Error generating PDF. Please try again.')
-    }
-  }
-
   const saveBill = () => {
     const billData = {
       billNumber,
@@ -479,392 +324,671 @@ export default function CreateBillPage() {
       gst: calculateGST(),
       total: calculateTotal()
     }
-    
-    // Save to localStorage for demo
     const existingBills = JSON.parse(localStorage.getItem('woodBills') || '[]')
     existingBills.push(billData)
     localStorage.setItem('woodBills', JSON.stringify(existingBills))
+    localStorage.setItem('lastBillNumber', billNumber)
     
-    alert('Bill saved successfully!')
-    router.push('/dashboard')
+    const currentNum = parseInt(billNumber.replace('#GWC', ''), 10) + 1
+    const nextBillNum = `#GWC${currentNum.toString().padStart(3, '0')}`
+    setBillNumber(nextBillNum)
+    
+    setSnackbar({ open: true, message: 'Bill saved successfully!', severity: 'success' })
+    setTimeout(() => router.push('/dashboard'), 1500)
+  }
+
+  const handlePrint = () => {
+    window.print()
+  }
+
+  const generatePDF = async () => {
+    try {
+      const jsPDF = (await import('jspdf')).default
+      const html2canvas = (await import('html2canvas')).default
+      
+      if (printRef.current) {
+        const canvas = await html2canvas(printRef.current, {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: '#ffffff'
+        })
+        
+        const imgData = canvas.toDataURL('image/png')
+        const pdf = new jsPDF('portrait', 'mm', 'a4')
+        
+        const imgWidth = 210
+        const pageHeight = 295
+        const imgHeight = (canvas.height * imgWidth) / canvas.width
+        let heightLeft = imgHeight
+        let position = 0
+        
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
+        heightLeft -= pageHeight
+        
+        while (heightLeft >= 0) {
+          position = heightLeft - imgHeight
+          pdf.addPage()
+          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight)
+          heightLeft -= pageHeight
+        }
+        
+        // Get PDF as blob for sharing
+        const pdfBlob = pdf.output('blob')
+        setGeneratedPdfBlob(pdfBlob)
+        
+        // Save PDF
+        pdf.save(`WoodBill-${billNumber}.pdf`)
+        
+        setSnackbar({ open: true, message: 'PDF generated successfully!', severity: 'success' })
+        
+        // Open sharing dialog
+        setTimeout(() => {
+          setShareDialog(true)
+        }, 1000)
+      }
+    } catch (error) {
+      console.error('Error generating PDF:', error)
+      setSnackbar({ open: true, message: 'Error generating PDF. Please try again.', severity: 'error' })
+    }
+  }
+
+  // Social media sharing functions
+  const shareOnWhatsApp = () => {
+    const message = `📋 Wood Bill Generated!\n\n🏢 Ganapathy Timbers and Wood Works\n📄 Bill No: ${billNumber}\n📅 Date: ${new Date(billDate).toLocaleDateString()}\n💰 Total: ₹${calculateTotal().toFixed(2)}\n\n🌲 Premium Wood & Timber Solutions`
+    const url = `https://wa.me/?text=${encodeURIComponent(message)}`
+    window.open(url, '_blank')
+  }
+
+  const shareOnTelegram = () => {
+    const message = `📋 Wood Bill Generated!\n\n🏢 Ganapathy Timbers and Wood Works\n📄 Bill No: ${billNumber}\n📅 Date: ${new Date(billDate).toLocaleDateString()}\n💰 Total: ₹${calculateTotal().toFixed(2)}\n\n🌲 Premium Wood & Timber Solutions`
+    const url = `https://t.me/share/url?text=${encodeURIComponent(message)}`
+    window.open(url, '_blank')
+  }
+
+  const shareViaEmail = () => {
+    const subject = `Wood Bill ${billNumber} - Ganapathy Timbers and Wood Works`
+    const body = `Dear Customer,\n\nPlease find attached your wood bill details:\n\nBill Number: ${billNumber}\nDate: ${new Date(billDate).toLocaleDateString()}\nTotal Amount: ₹${calculateTotal().toFixed(2)}\n\nThank you for choosing Ganapathy Timbers and Wood Works - Premium Wood & Timber Solutions.\n\nBest Regards,\nGanapathy Timbers and Wood Works Team`
+    const url = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+    window.open(url)
+  }
+
+  const shareOnFacebook = () => {
+    const message = `Just generated a professional wood bill with Ganapathy Timbers and Wood Works! 🌲📋 Bill #${billNumber} - Total: ₹${calculateTotal().toFixed(2)}`
+    const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}&quote=${encodeURIComponent(message)}`
+    window.open(url, '_blank')
+  }
+
+  const shareOnTwitter = () => {
+    const message = `📋 Wood Bill Generated! 🌲\n\nBill #${billNumber}\nTotal: ₹${calculateTotal().toFixed(2)}\n\n#WoodBusiness #ProfessionalBilling #GanapathyWoodCarving`
+    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(message)}`
+    window.open(url, '_blank')
+  }
+
+  const shareOnLinkedIn = () => {
+    const message = `Professional wood billing system in action! Generated Bill #${billNumber} for ₹${calculateTotal().toFixed(2)} with Ganapathy Timbers and Wood Works - Premium Wood & Timber Solutions. #BusinessEfficiency #WoodIndustry`
+    const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}&summary=${encodeURIComponent(message)}`
+    window.open(url, '_blank')
+  }
+
+  // Native sharing if available
+  const handleNativeShare = async () => {
+    if (navigator.share && generatedPdfBlob) {
+      try {
+        const file = new File([generatedPdfBlob], `WoodBill-${billNumber}.pdf`, { type: 'application/pdf' })
+        await navigator.share({
+          title: `Wood Bill ${billNumber}`,
+          text: `Wood Bill from Ganapathy Timbers and Wood Works - Total: ₹${calculateTotal().toFixed(2)}`,
+          files: [file]
+        })
+      } catch (error) {
+        console.error('Error sharing:', error)
+      }
+    }
   }
 
   const gstCalculation = calculateGST()
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <header className="bg-white dark:bg-gray-800 shadow print:hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center space-x-4">
-              <Link href="/dashboard" className="text-blue-600 hover:text-blue-800">
-                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-              </Link>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Create New Bill</h1>
-            </div>
-            <div className="flex space-x-2">
-              <button
-                onClick={handlePrint}
-                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200"
-              >
-                🖨️ Print
-              </button>
-              <button
-                onClick={() => window.print()}
-                className="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-md text-xs font-medium transition-colors duration-200"
-                title="Browser Print"
-              >
-                📄 Quick Print
-              </button>
-              <button
-                onClick={generatePDF}
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200"
-              >
-                📄 PDF
-              </button>
-              <button
-                onClick={saveBill}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200"
-              >
-                💾 Save Bill
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+    <ThemeProvider theme={theme}>
+      <Box sx={{ bgcolor: 'background.default', minHeight: '100vh' }}>
+        {/* Common Header */}
+        <CommonHeader onDrawerOpen={handleDrawerOpen} />
 
-      {/* Bill Content */}
-      <div ref={printRef} className="max-w-4xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-8 print:shadow-none print:rounded-none">
-          
-          {/* Company Header */}
-          <div className="text-center mb-8 border-b pb-4">
-            <h1 className="text-3xl font-bold text-amber-600">WoodBill Pro</h1>
-            <p className="text-gray-600 dark:text-gray-400">Premium Wood & Timber Solutions</p>
-            <p className="text-sm text-gray-500 dark:text-gray-500">
-              Address: 123 Timber Street, Wood City | Phone: +91 98765 43210 | GSTIN: 29ABCDE1234F1Z5
-            </p>
-          </div>
+        {/* Common Sidebar */}
+        <CommonSidebar open={drawerOpen} onClose={handleDrawerClose} />
 
-          {/* Bill Header Info */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Bill To:</h3>
-              <div className="space-y-2">
-                <input
-                  type="text"
-                  placeholder="Customer Name"
-                  value={customerInfo.name}
-                  onChange={(e) => setCustomerInfo({...customerInfo, name: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white print:border-none print:bg-transparent"
-                />
-                <textarea
-                  placeholder="Customer Address"
-                  value={customerInfo.address}
-                  onChange={(e) => setCustomerInfo({...customerInfo, address: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white print:border-none print:bg-transparent"
-                  rows={3}
-                />
-                <input
-                  type="text"
-                  placeholder="GSTIN"
-                  value={customerInfo.gstin}
-                  onChange={(e) => setCustomerInfo({...customerInfo, gstin: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white print:border-none print:bg-transparent"
-                />
-                <input
-                  type="text"
-                  placeholder="Phone Number"
-                  value={customerInfo.phone}
-                  onChange={(e) => setCustomerInfo({...customerInfo, phone: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white print:border-none print:bg-transparent"
-                />
-              </div>
-            </div>
+        {/* Create Bill Actions Bar */}
+        <AppBar position="static" elevation={0} sx={{ bgcolor: 'background.paper', borderBottom: 1, borderColor: 'divider' }}>
+          <Toolbar>
+            <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
+              <ReceiptIcon sx={{ mr: 1, color: 'primary.main' }} />
+              <Typography variant="h6" sx={{ color: 'white', fontWeight: 600 }}>
+                Create New Bill
+              </Typography>
+            </Box>
             
-            <div>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="font-medium text-gray-900 dark:text-white">Bill No:</span>
-                  <input
-                    type="text"
-                    value={billNumber}
-                    onChange={(e) => setBillNumber(e.target.value)}
-                    className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white print:border-none print:bg-transparent"
-                  />
-                </div>
-                <div className="flex justify-between">
-                  <span className="font-medium text-gray-900 dark:text-white">Date:</span>
-                  <input
-                    type="date"
-                    value={billDate}
-                    onChange={(e) => setBillDate(e.target.value)}
-                    className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white print:border-none print:bg-transparent"
-                  />
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="font-medium text-gray-900 dark:text-white">Inter-State:</span>
-                  <label className="flex items-center print:hidden">
-                    <input
-                      type="checkbox"
-                      checked={isInterState}
-                      onChange={(e) => {
-                        setIsInterState(e.target.checked)
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Tooltip title="Print Bill">
+                <Button
+                  variant="outlined"
+                  startIcon={<PrintIcon />}
+                  onClick={handlePrint}
+                  size="small"
+                  sx={{ 
+                    '@media print': { display: 'none' },
+                    borderColor: 'primary.main',
+                    color: 'primary.main'
+                  }}
+                >
+                  Print
+                </Button>
+              </Tooltip>
+              
+              <Tooltip title="Generate PDF">
+                <Button
+                  variant="outlined"
+                  startIcon={<PdfIcon />}
+                  onClick={generatePDF}
+                  size="small"
+                  sx={{ 
+                    '@media print': { display: 'none' },
+                    borderColor: '#dc2626',
+                    color: '#dc2626'
+                  }}
+                >
+                  PDF
+                </Button>
+              </Tooltip>
+              
+              <Tooltip title="Save Bill">
+                <Button
+                  variant="contained"
+                  startIcon={<SaveIcon />}
+                  onClick={saveBill}
+                  size="small"
+                  sx={{ 
+                    '@media print': { display: 'none' },
+                    bgcolor: 'primary.main',
+                    color: 'black',
+                    '&:hover': { bgcolor: 'primary.dark' }
+                  }}
+                >
+                  Save
+                </Button>
+              </Tooltip>
+            </Box>
+          </Toolbar>
+        </AppBar>
+
+        {/* Main Content */}
+        <Container maxWidth="lg" sx={{ py: 3 }}>
+          <div ref={printRef}>
+            <Paper sx={{ p: 4, mb: 3 }}>
+              {/* Company Header */}
+              <Box textAlign="center" mb={4} sx={{ borderBottom: 2, borderColor: 'divider', pb: 3 }}>
+                <Typography variant="h4" sx={{ color: 'primary.main', fontWeight: 700, mb: 1 }}>
+                  Ganapathy Timbers and Wood Works
+                </Typography>
+                <Typography variant="h6" color="text.secondary" mb={1}>
+                  Premium Wood & Timber Solutions
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Address: 123 Timber Street, Wood City | Phone: +91 9486453141
+                </Typography>
+              </Box>
+
+              {/* Bill Header Info */}
+              <Box display="flex" justifyContent="space-between" gap={3} mb={4}>
+                {/* Bill To Section */}
+                <Card variant="outlined" sx={{ flex: 1 }}>
+                  <CardContent>
+                    <Box display="flex" alignItems="center" mb={2}>
+                      <PersonIcon sx={{ mr: 1, color: 'primary.main' }} />
+                      <Typography variant="h6" fontWeight={600}>Bill To:</Typography>
+                    </Box>
+                    
+                    <TextField
+                      fullWidth
+                      label="Customer Name"
+                      value={customerInfo.name}
+                      onChange={(e) => setCustomerInfo({...customerInfo, name: e.target.value})}
+                      margin="normal"
+                      size="small"
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <PersonIcon color="action" />
+                          </InputAdornment>
+                        ),
                       }}
-                      className="mr-2"
                     />
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Yes</span>
-                  </label>
-                  <span className="print:inline hidden">{isInterState ? 'Yes' : 'No'}</span>
-                </div>
-              </div>
-            </div>
-          </div>
+                    
+                    <TextField
+                      fullWidth
+                      label="Customer Address"
+                      value={customerInfo.address}
+                      onChange={(e) => setCustomerInfo({...customerInfo, address: e.target.value})}
+                      margin="normal"
+                      size="small"
+                      multiline
+                      rows={2}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <LocationIcon color="action" />
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                    {!isInterState && (
+                      <TextField
+                        fullWidth
+                        label="GSTIN"
+                        value={customerInfo.gstin}
+                        onChange={(e) => setCustomerInfo({...customerInfo, gstin: e.target.value})}
+                      margin="normal"
+                      size="small"
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <AccountBalanceIcon color="action" />
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                    )}
+                    <TextField
+                      fullWidth
+                      label="Phone Number"
+                      value={customerInfo.phone}
+                      onChange={(e) => setCustomerInfo({...customerInfo, phone: e.target.value})}
+                      margin="normal"
+                      size="small"
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <PhoneIcon color="action" />
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                  </CardContent>
+                </Card>
+                
+                {/* Bill Details Section */}
+                <Card variant="outlined" sx={{ flex: 1 }}>
+                  <CardContent>
+                    <Box display="flex" alignItems="center" mb={2}>
+                      <BusinessIcon sx={{ mr: 1, color: 'primary.main' }} />
+                      <Typography variant="h6" fontWeight={600}>Bill Details:</Typography>
+                    </Box>
+                    
+                    <TextField
+                      fullWidth
+                      label="Bill Number"
+                      value={billNumber}
+                      onChange={(e) => setBillNumber(e.target.value)}
+                      margin="normal"
+                      size="small"
+                    />
+                    
+                    <TextField
+                      fullWidth
+                      label="Date"
+                      type="date"
+                      value={billDate}
+                      onChange={(e) => setBillDate(e.target.value)}
+                      margin="normal"
+                      size="small"
+                      InputLabelProps={{ shrink: true }}
+                    />
+                    
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={isInterState}
+                          onChange={(e) => setIsInterState(e.target.checked)}
+                          color="primary"
+                        />
+                      }
+                      label="Inter-State Transaction"
+                      sx={{ mt: 2 }}
+                    />
+                  </CardContent>
+                </Card>
+              </Box>
 
-          {/* Bill Items Table */}
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Bill Items</h3>
-            <div className="overflow-x-auto">
-              <table className="min-w-full border border-gray-300 dark:border-gray-600">
-                <thead className="bg-gray-50 dark:bg-gray-700">
-                  <tr>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-900 dark:text-white border-b">Sr.</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-900 dark:text-white border-b">Product</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-900 dark:text-white border-b">Specification</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-900 dark:text-white border-b">Qty</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-900 dark:text-white border-b">Unit</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-900 dark:text-white border-b">Rate</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-900 dark:text-white border-b">Amount</th>
-                    <th className="px-4 py-2 text-left text-sm font-medium text-gray-900 dark:text-white border-b print:hidden">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {billItems.map((item, index) => (
-                    <tr key={item.id} className="border-b border-gray-200 dark:border-gray-600">
-                      <td className="px-4 py-2 text-sm text-gray-900 dark:text-white">{index + 1}</td>
-                      <td className="px-4 py-2">
-                        <select
-                          value={item.product}
-                          onChange={(e) => updateBillItem(item.id, 'product', e.target.value)}
-                          className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm print:border-none print:bg-transparent"
-                        >
-                          <option value="">Select Product</option>
-                          {woodProducts.map((product) => (
-                            <option key={product} value={product}>{product}</option>
-                          ))}
-                        </select>
-                      </td>
-                      <td className="px-4 py-2">
-                        <select
-                          value={item.specification}
-                          onChange={(e) => updateBillItem(item.id, 'specification', e.target.value)}
-                          className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm print:border-none print:bg-transparent"
-                        >
-                          <option value="">Select Spec</option>
-                          {specifications.map((spec) => (
-                            <option key={spec} value={spec}>{spec}</option>
-                          ))}
-                        </select>
-                      </td>
-                      <td className="px-4 py-2">
-                        <input
-                          type="number"
-                          value={item.quantity}
-                          onChange={(e) => updateBillItem(item.id, 'quantity', parseFloat(e.target.value) || 0)}
-                          className="w-20 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm print:border-none print:bg-transparent"
-                          min="0"
-                          step="0.01"
-                        />
-                      </td>
-                      <td className="px-4 py-2">
-                        <select
-                          value={item.unit}
-                          onChange={(e) => updateBillItem(item.id, 'unit', e.target.value)}
-                          className="w-16 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm print:border-none print:bg-transparent"
-                        >
-                          <option value="CFT">CFT</option>
-                          <option value="Pcs">Pcs</option>
-                          <option value="Kg">Kg</option>
-                          <option value="Sq.Ft">Sq.Ft</option>
-                        </select>
-                      </td>
-                      <td className="px-4 py-2">
-                        <input
-                          type="number"
-                          value={item.rate}
-                          onChange={(e) => updateBillItem(item.id, 'rate', parseFloat(e.target.value) || 0)}
-                          className="w-24 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm print:border-none print:bg-transparent"
-                          min="0"
-                          step="0.01"
-                        />
-                      </td>
-                      <td className="px-4 py-2 text-sm text-gray-900 dark:text-white">
-                        ₹{item.amount.toFixed(2)}
-                      </td>
-                      <td className="px-4 py-2 print:hidden">
-                        <button
-                          onClick={() => removeBillItem(item.id)}
-                          className="text-red-600 hover:text-red-800 text-sm"
-                          disabled={billItems.length === 1}
-                        >
-                          Remove
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+              {/* Bill Items Table */}
+              <Box mb={4}>
+                <Typography variant="h6" fontWeight={600} mb={2}>Bill Items</Typography>
+                <TableContainer component={Paper} variant="outlined">
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow sx={{ bgcolor: 'grey.50' }}>
+                        <TableCell>Sr.</TableCell>
+                        <TableCell>Product</TableCell>
+                        <TableCell>Specification</TableCell>
+                        <TableCell>Qty</TableCell>
+                        <TableCell>Unit</TableCell>
+                        <TableCell>Rate (₹)</TableCell>
+                        <TableCell>Amount (₹)</TableCell>
+                        <TableCell sx={{ '@media print': { display: 'none' } }}>Action</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {billItems.map((item, index) => (
+                        <TableRow key={item.id}>
+                          <TableCell>{index + 1}</TableCell>
+                          <TableCell sx={{ minWidth: 200 }}>
+                            <ProductSelect
+                              value={item.product}
+                              onChange={(value) => updateBillItem(item.id, 'product', value)}
+                              products={woodProducts}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <FormControl fullWidth size="small">
+                              <InputLabel>Specification</InputLabel>
+                              <Select
+                                value={item.specification}
+                                onChange={(e) => updateBillItem(item.id, 'specification', e.target.value)}
+                                label="Specification"
+                              >
+                                {specifications.map((spec) => (
+                                  <MenuItem key={spec} value={spec}>{spec}</MenuItem>
+                                ))}
+                              </Select>
+                            </FormControl>
+                          </TableCell>
+                          <TableCell>
+                            <TextField
+                              type="number"
+                              value={item.quantity}
+                              onChange={(e) => updateBillItem(item.id, 'quantity', parseFloat(e.target.value) || 0)}
+                              size="small"
+                              inputProps={{ min: 0, step: 0.01 }}
+                              sx={{ width: 80 }}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <FormControl size="small" sx={{ minWidth: 80 }}>
+                              <Select
+                                value={item.unit}
+                                onChange={(e) => updateBillItem(item.id, 'unit', e.target.value)}
+                              >
+                                {units.map((unit) => (
+                                  <MenuItem key={unit} value={unit}>{unit}</MenuItem>
+                                ))}
+                              </Select>
+                            </FormControl>
+                          </TableCell>
+                          <TableCell>
+                            <TextField
+                              type="number"
+                              value={item.rate}
+                              onChange={(e) => updateBillItem(item.id, 'rate', parseFloat(e.target.value) || 0)}
+                              size="small"
+                              inputProps={{ min: 0, step: 0.01 }}
+                              sx={{ width: 100 }}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Chip 
+                              label={`₹${item.amount.toFixed(2)}`} 
+                              color="primary" 
+                              variant="outlined"
+                            />
+                          </TableCell>
+                          <TableCell sx={{ '@media print': { display: 'none' } }}>
+                            <IconButton
+                              onClick={() => removeBillItem(item.id)}
+                              color="error"
+                              disabled={billItems.length === 1}
+                              size="small"
+                            >
+                              <DeleteIcon />
+                            </IconButton>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+                
+                <Button
+                  startIcon={<AddIcon />}
+                  onClick={addBillItem}
+                  variant="outlined"
+                  sx={{ mt: 2, '@media print': { display: 'none' } }}
+                >
+                  Add Item
+                </Button>
+              </Box>
+
+              {/* Bill Summary */}
+              <Box display="flex" justifyContent="flex-end" mb={4}>
+                <Card variant="outlined" sx={{ minWidth: 300 }}>
+                  <CardContent>
+                    <Typography variant="h6" fontWeight={600} mb={2}>Bill Summary</Typography>
+                    
+                    <Box display="flex" justifyContent="space-between" mb={1}>
+                      <Typography>Subtotal:</Typography>
+                      <Typography fontWeight={600}>₹{calculateSubtotal().toFixed(2)}</Typography>
+                    </Box>
+                    
+                    {!isInterState && (
+                      <>
+                        <Box display="flex" justifyContent="space-between" mb={1}>
+                          <Typography>CGST ({gstRate/2}%):</Typography>
+                          <Typography>₹{gstCalculation.cgst.toFixed(2)}</Typography>
+                        </Box>
+                        <Box display="flex" justifyContent="space-between" mb={1}>
+                          <Typography>SGST ({gstRate/2}%):</Typography>
+                          <Typography>₹{gstCalculation.sgst.toFixed(2)}</Typography>
+                        </Box>
+                      </>
+                    )}
+                    
+                    <Divider sx={{ my: 1 }} />
+                    
+                    <Box display="flex" justifyContent="space-between">
+                      <Typography variant="h6" fontWeight={700}>Total Amount:</Typography>
+                      <Typography variant="h6" fontWeight={700} color="primary.main">
+                        ₹{calculateTotal().toFixed(2)}
+                      </Typography>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Box>
+
+              {/* Terms and Conditions */}
+              <Box mt={4} pt={3} sx={{ borderTop: 1, borderColor: 'divider' }}>
+                <Typography variant="h6" fontWeight={600} mb={2}>Terms & Conditions:</Typography>
+                <Box sx={{ color: 'text.secondary', fontSize: '0.875rem' }}>
+                  <Typography variant="body2" mb={0.5}>1. All wood materials are subject to natural variations in color and grain.</Typography>
+                  <Typography variant="body2" mb={0.5}>2. Payment due within 30 days of invoice date.</Typography>
+                  <Typography variant="body2" mb={0.5}>3. Goods once sold cannot be returned unless defective.</Typography>
+                  <Typography variant="body2">4. Delivery charges are extra and will be charged as per actual.</Typography>
+                </Box>
+              </Box>
+
+              {/* Signature Section */}
+              <Box display="flex" justifyContent="space-between" mt={6}>
+                <Box textAlign="center">
+                  <Typography variant="body2" color="text.secondary" mb={4}>Customer Signature</Typography>
+                  <Box sx={{ borderBottom: 1, borderColor: 'text.primary', width: 200 }} />
+                </Box>
+                <Box textAlign="center">
+                  <Typography variant="body2" color="text.secondary" mb={4}>Authorized Signature</Typography>
+                  <Box sx={{ borderBottom: 1, borderColor: 'text.primary', width: 200 }} />
+                  <Typography variant="caption" color="text.secondary" mt={1}>For Ganapathy Timbers and Wood Works</Typography>
+                </Box>
+              </Box>
+            </Paper>
+          </div>
+        </Container>
+
+        {/* Snackbar for notifications */}
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={4000}
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+        >
+          <Alert 
+            onClose={() => setSnackbar({ ...snackbar, open: false })} 
+            severity={snackbar.severity}
+            sx={{ width: '100%' }}
+          >
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
+
+        {/* Social Media Sharing Dialog */}
+        <Dialog 
+          open={shareDialog} 
+          onClose={() => setShareDialog(false)}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle>
+            <Box display="flex" alignItems="center">
+              <ShareIcon sx={{ mr: 1, color: 'primary.main' }} />
+              <Typography variant="h6">Share Your Bill</Typography>
+            </Box>
+          </DialogTitle>
+          <DialogContent>
+            <Typography variant="body2" color="text.secondary" mb={3}>
+              Share your generated bill on social media or via email
+            </Typography>
             
-            <button
-              onClick={addBillItem}
-              className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 print:hidden"
-            >
-              + Add Item
-            </button>
-          </div>
+            <List>
+              {typeof navigator.share === 'function' && (
+                <ListItem disablePadding>
+                  <ListItemButton onClick={handleNativeShare}>
+                    <ListItemIcon>
+                      <ShareIcon color="primary" />
+                    </ListItemIcon>
+                    <ListItemText 
+                      primary="Share PDF File" 
+                      secondary="Use device native sharing"
+                    />
+                  </ListItemButton>
+                </ListItem>
+              )}
+              
+              <ListItem disablePadding>
+                <ListItemButton onClick={shareOnWhatsApp}>
+                  <ListItemIcon>
+                    <WhatsAppIcon sx={{ color: '#25D366' }} />
+                  </ListItemIcon>
+                  <ListItemText 
+                    primary="WhatsApp" 
+                    secondary="Share bill details on WhatsApp"
+                  />
+                </ListItemButton>
+              </ListItem>
+              
+              <ListItem disablePadding>
+                <ListItemButton onClick={shareOnTelegram}>
+                  <ListItemIcon>
+                    <TelegramIcon sx={{ color: '#0088cc' }} />
+                  </ListItemIcon>
+                  <ListItemText 
+                    primary="Telegram" 
+                    secondary="Share on Telegram"
+                  />
+                </ListItemButton>
+              </ListItem>
+              
+              <ListItem disablePadding>
+                <ListItemButton onClick={shareViaEmail}>
+                  <ListItemIcon>
+                    <EmailIcon sx={{ color: '#EA4335' }} />
+                  </ListItemIcon>
+                  <ListItemText 
+                    primary="Email" 
+                    secondary="Send via email"
+                  />
+                </ListItemButton>
+              </ListItem>
+              
+              <ListItem disablePadding>
+                <ListItemButton onClick={shareOnFacebook}>
+                  <ListItemIcon>
+                    <FacebookIcon sx={{ color: '#1877F2' }} />
+                  </ListItemIcon>
+                  <ListItemText 
+                    primary="Facebook" 
+                    secondary="Share on Facebook"
+                  />
+                </ListItemButton>
+              </ListItem>
+              
+              <ListItem disablePadding>
+                <ListItemButton onClick={shareOnTwitter}>
+                  <ListItemIcon>
+                    <TwitterIcon sx={{ color: '#1DA1F2' }} />
+                  </ListItemIcon>
+                  <ListItemText 
+                    primary="Twitter" 
+                    secondary="Share on Twitter"
+                  />
+                </ListItemButton>
+              </ListItem>
+              
+              <ListItem disablePadding>
+                <ListItemButton onClick={shareOnLinkedIn}>
+                  <ListItemIcon>
+                    <LinkedInIcon sx={{ color: '#0A66C2' }} />
+                  </ListItemIcon>
+                  <ListItemText 
+                    primary="LinkedIn" 
+                    secondary="Share on LinkedIn"
+                  />
+                </ListItemButton>
+              </ListItem>
+            </List>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setShareDialog(false)}>Close</Button>
+          </DialogActions>
+        </Dialog>
 
-          {/* Bill Summary */}
-          <div className="border-t pt-6">
-            <div className="flex justify-end">
-              <div className="w-80">
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-gray-900 dark:text-white">Subtotal:</span>
-                    <span className="text-gray-900 dark:text-white">₹{calculateSubtotal().toFixed(2)}</span>
-                  </div>
-                  
-                  {!isInterState ? (
-                    <>
-                      <div className="flex justify-between">
-                        <span className="text-gray-900 dark:text-white">CGST ({gstRate/2}%):</span>
-                        <span className="text-gray-900 dark:text-white">₹{gstCalculation.cgst.toFixed(2)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-900 dark:text-white">SGST ({gstRate/2}%):</span>
-                        <span className="text-gray-900 dark:text-white">₹{gstCalculation.sgst.toFixed(2)}</span>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="flex justify-between">
-                      <span className="text-gray-900 dark:text-white">IGST ({igstRate}%):</span>
-                      <span className="text-gray-900 dark:text-white">₹{gstCalculation.igst.toFixed(2)}</span>
-                    </div>
-                  )}
-                  
-                  <div className="border-t pt-2">
-                    <div className="flex justify-between text-lg font-bold">
-                      <span className="text-gray-900 dark:text-white">Total Amount:</span>
-                      <span className="text-gray-900 dark:text-white">₹{calculateTotal().toFixed(2)}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+        {/* Floating Action Button for Quick Share */}
+        {generatedPdfBlob && (
+          <SpeedDial
+            ariaLabel="Share Bill"
+            sx={{ position: 'fixed', bottom: 16, right: 16 }}
+            icon={<SpeedDialIcon icon={<ShareIcon />} />}
+            onClick={() => setShareDialog(true)}
+          >
+            <SpeedDialAction
+              icon={<WhatsAppIcon sx={{ color: '#25D366' }} />}
+              tooltipTitle="WhatsApp"
+              onClick={shareOnWhatsApp}
+            />
+            <SpeedDialAction
+              icon={<TelegramIcon sx={{ color: '#0088cc' }} />}
+              tooltipTitle="Telegram"
+              onClick={shareOnTelegram}
+            />
+            <SpeedDialAction
+              icon={<EmailIcon sx={{ color: '#EA4335' }} />}
+              tooltipTitle="Email"
+              onClick={shareViaEmail}
+            />
+            <SpeedDialAction
+              icon={<FacebookIcon sx={{ color: '#1877F2' }} />}
+              tooltipTitle="Facebook"
+              onClick={shareOnFacebook}
+            />
+          </SpeedDial>
+        )}
 
-          {/* Terms and Conditions */}
-          <div className="mt-8 pt-6 border-t">
-            <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Terms & Conditions:</h4>
-            <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
-              <p>1. All wood materials are subject to natural variations in color and grain.</p>
-              <p>2. Payment due within 30 days of invoice date.</p>
-              <p>3. Goods once sold cannot be returned unless defective.</p>
-              <p>4. Delivery charges are extra and will be charged as per actual.</p>
-            </div>
-          </div>
-
-          {/* Signature Section */}
-          <div className="mt-8 flex justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Customer Signature</p>
-              <div className="mt-8 border-b border-gray-300 w-48"></div>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Authorized Signature</p>
-              <div className="mt-8 border-b border-gray-300 w-48"></div>
-              <p className="text-xs text-gray-500 mt-1">For WoodBill Pro</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Print Styles */}
-      <style jsx global>{`
-        @media print {
-          @page {
-            margin: 0.5in;
-            size: A4;
-          }
-          
-          body {
-            print-color-adjust: exact;
-            -webkit-print-color-adjust: exact;
-          }
-          
-          .print\\:hidden {
-            display: none !important;
-          }
-          
-          .print\\:border-none {
-            border: none !important;
-          }
-          
-          .print\\:bg-transparent {
-            background: transparent !important;
-          }
-          
-          .print\\:rounded-none {
-            border-radius: 0 !important;
-          }
-          
-          .print\\:inline {
-            display: inline !important;
-          }
-          
-          .print\\:shadow-none {
-            box-shadow: none !important;
-          }
-          
-          /* Hide form controls */
-          input, select, textarea {
-            border: none !important;
-            background: transparent !important;
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            appearance: none;
-          }
-          
-          /* Show values instead of form controls */
-          input[type="text"], input[type="date"], input[type="number"], select, textarea {
-            color: black !important;
-            font-size: inherit !important;
-          }
-          
-          /* Table styling for print */
-          table {
-            border-collapse: collapse !important;
-          }
-          
-          th, td {
-            border: 1px solid #000 !important;
-            padding: 4px !important;
-          }
-          
-          /* Ensure text is black */
-          * {
-            color: black !important;
-          }
-          
-          /* Company header styling */
-          .text-amber-600 {
-            color: #d97706 !important;
-          }
-        }
-      `}</style>
-    </div>
+        {/* Footer */}
+        <Footer />
+      </Box>
+    </ThemeProvider>
   )
 }

@@ -6,14 +6,18 @@ export default function ForgotPasswordPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
-          <Image
-            className="mx-auto dark:invert"
-            src="/next.svg"
-            alt="Next.js logo"
-            width={120}
-            height={25}
-            priority
-          />
+          <div className="flex justify-center items-center gap-2 mb-4">
+            <img 
+              src="/favicon.ico" 
+              alt="Ganapathy Logo" 
+              style={{ 
+                width: 40, 
+                height: 40, 
+                borderRadius: 4 
+              }} 
+            />
+            <span className="text-2xl font-bold text-gray-900 dark:text-white">Ganapathy Timbers</span>
+          </div>
           <h2 className="mt-6 text-3xl font-extrabold text-gray-900 dark:text-white">
             Reset your password
           </h2>
